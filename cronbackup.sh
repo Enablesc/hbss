@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ "$(id -u)" == "0" ]
+then
+	printf "This program never will be run as root user\n"
+	exit 1
+fi
 
 if [ -f "/etc/cronbackup.cfg" ]
 then
@@ -9,15 +14,32 @@ else
 	exit 1
 fi
 
-[ "x${TMPFILE}" == "x" ] && printf "Temporal directory can\'t be empty\n" ; exit 1
-[ "x${DEST_EMAIL}" == "x" ] && printf "Destination email can\'t be empty\n" ; exit 1
-[ "x${RETENTION}" == "x"] printf "Retention level can\'t be empty\n" ; exit 1
-[ "x${BACKUPTOOL}" == "x" ] printf "Backup tool can\'t be empty\n" ; exit 1
+if [ "x${TMPFILE}" == "x" ]
+then
+	printf "Temporal directory can\'t be empty\n"
+	exit 1
+fi
 
+if [ "x${DEST_EMAIL}" == "x" ]
+then
+	printf "Destination email can\'t be empty\n"
+	exit 1
+fi
+
+if [ "x${RETENTION}" == "x" ] 
+then
+	printf "Retention level can\'t be empty\n"
+	exit 1
+fi
+
+if [ "x${BACKUPTOOL}" == "x" ] 
+then
+	printf "Backup tool can\'t be empty\n"
+	exit 1
+fi
 
 HOUR=$(date +%H)
 BACKUP_IDS=()
-
 
 #
 # Populate backup ids array
@@ -34,7 +56,7 @@ create_backups_array()
 	#
 	# Populate then with new one values
 	#
-	for i in $(${BACKTOOL} -ld | sed -r  's/^[^0-9]*([0-9]+).*/\1/' | sed -r  's/[^0-9]*//'|sed '/^$/d')
+	for i in $(${BACKUPTOOL} -ld | sed -r  's/^[^0-9]*([0-9]+).*/\1/' | sed -r  's/[^0-9]*//'|sed '/^$/d')
 	do
 		BACKUP_IDS+=("${i}")
 	done
@@ -56,7 +78,7 @@ create_delete_list()
 	fi
 
 	rm -f /tmp/older_logs.*
-	if ! ${BACKTOOL} -ll --backup-id=${id} > "${TMPFILE}"
+	if ! ${BACKUPTOOL} -ll --backup-id=${id} > "${TMPFILE}"
 	then
 		printf 'Failed to create delete files list\n'
 		rm -f /tmp/older_logs.*
@@ -108,7 +130,7 @@ create_backup()
 
 	local suffix=$(date +%d-%m-%Y_%H:%M)
 
-	if ! ${BACKTOOL} --suffix="${suffix}"
+	if ! ${BACKUPTOOL} --suffix="${suffix}"
 	then
 		printf 'Backup failed. Sending email to hana DBA .....\n'
 		send_mail "*** FAILED *** Backup in $(hostname) with suffix $(date +%d-%m-%Y_%H:%M)"
@@ -139,7 +161,7 @@ create_backup()
 	then
 		create_delete_list ${last_id}
 		delete_old_log_files "${TMPFILE}"
-		${BACKTOOL} -cd --backup-id=${last_id}
+		${BACKUPTOOL} -cd --backup-id=${last_id}
 	elif (( ${HOUR} >= 11 || ${HOUR} <= 18 ))
 	then
 		if (( ${index_id} < ${RETENTION} ))
@@ -155,7 +177,7 @@ create_backup()
 
 			create_delete_list ${use_id}
 			delete_old_log_files ${TMPFILE}
-			${BACKTOOL} -cd --backup-id=${use_id}
+			${BACKUPTOOL} -cd --backup-id=${use_id}
 		fi
 	fi
 

@@ -1216,7 +1216,7 @@ EOF
 
     echo "" >> ${SCRIPT_LOG}
     echo "deleting log and data backups older than backup_id ${DATA_BACKUP_ID}:" >> ${SCRIPT_LOG}
-    DISK_DELETE_CLAUSE=""
+    DISK_DELETE_CLAUSE=
     if [ ${CATALOG_DELETE_FROM_DISK} == "TRUE" ]; then
       echo "Deleting log backups from catalog AND from disk" >> ${SCRIPT_LOG}
       DISK_DELETE_CLAUSE="WITH FILE"
