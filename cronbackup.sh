@@ -38,7 +38,7 @@ then
 	exit 1
 fi
 
-HOUR=$(date +%H)
+HOUR=$(date +%-H)
 BACKUP_IDS=()
 
 #
@@ -102,10 +102,8 @@ delete_old_log_files()
 		return 1
 	fi
 
-	while read line
-	do
-		rm -f "${line}"
-	done < ${input_file}
+	list_content=( $(cat "${input_file}") )
+	echo ${list_content[@]} | tr -s '/' | xargs -r rm -f
 
 	return 0
 }
@@ -123,7 +121,6 @@ send_mail()
 #
 create_backup()
 {
-
 	#
 	# First run a backup
 	#
@@ -156,7 +153,6 @@ create_backup()
 	#
 	# If hour is the first of day, delete all other older
 	#
-
 	if (( ${HOUR} == 8 ))
 	then
 		create_delete_list ${last_id}
@@ -183,6 +179,5 @@ create_backup()
 
 	return 0
 }
-
 
 create_backup
